@@ -376,7 +376,7 @@ final class FutureImpl<T> implements Future<T> {
             if (waiters != null) {
                 waiters.forEach(this::unlock);
             }
-            if (actions != null) {
+            if (actions != null && !isCancelled()) {
                 actions.forEach(this::perform);
                 return true;
             } else {
