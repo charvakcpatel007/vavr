@@ -47,14 +47,14 @@ final class FutureImpl<T> implements Future<T> {
 
     /**
      * Indicates if this Future is cancelled
-     *
+     * <p>
      * GuardedBy("lock")
      */
     private volatile boolean cancelled;
 
     /**
      * Once the Future is completed, the value is defined.
-     *
+     * <p>
      * GuardedBy("lock")
      */
     private volatile Option<Try<T>> value;
@@ -62,7 +62,7 @@ final class FutureImpl<T> implements Future<T> {
     /**
      * The queue of actions is filled when calling onComplete() before the Future is completed or cancelled.
      * Otherwise actions = null.
-     *
+     * <p>
      * GuardedBy("lock")
      */
     private Queue<Consumer<Try<T>>> actions;
@@ -70,14 +70,14 @@ final class FutureImpl<T> implements Future<T> {
     /**
      * The queue of waiters is filled when calling await() before the Future is completed or cancelled.
      * Otherwise waiters = null.
-     *
+     * <p>
      * GuardedBy("lock")
      */
     private Queue<Thread> waiters;
 
     /**
      * The Thread which runs the computation.
-     *
+     * <p>
      * GuardedBy("lock")
      */
     private Thread thread;
@@ -103,23 +103,25 @@ final class FutureImpl<T> implements Future<T> {
      * Creates a {@code FutureImpl} that needs to be automatically completed by calling {@link #tryComplete(Try)}.
      *
      * @param executor An {@link Executor} to run and control the computation and to perform the actions.
-     * @param <T> value type of the Future
+     * @param <T>      value type of the Future
      * @return a new {@code FutureImpl} instance
      */
     static <T> FutureImpl<T> of(Executor executor) {
-        return new FutureImpl<>(executor, Option.none(), Queue.empty(), Queue.empty(), (complete, updateThread) -> {});
+        return new FutureImpl<>(executor, Option.none(), Queue.empty(), Queue.empty(), (complete, updateThread) -> {
+        });
     }
 
     /**
      * Creates a {@code FutureImpl} that is immediately completed with the given value. No task will be started.
      *
      * @param executor An {@link Executor} to run and control the computation and to perform the actions.
-     * @param value the result of this Future
-     * @param <T> value type of the Future
+     * @param value    the result of this Future
+     * @param <T>      value type of the Future
      * @return a new {@code FutureImpl} instance
      */
     static <T> FutureImpl<T> of(Executor executor, Try<? extends T> value) {
-        return new FutureImpl<>(executor, Option.some(Try.narrow(value)), null, null, (complete, updateThread) -> {});
+        return new FutureImpl<>(executor, Option.some(Try.narrow(value)), null, null, (complete, updateThread) -> {
+        });
     }
 
     /**
@@ -133,7 +135,7 @@ final class FutureImpl<T> implements Future<T> {
      */
     static <T> FutureImpl<T> sync(Executor executor, Task<? extends T> task) {
         return new FutureImpl<>(executor, Option.none(), Queue.empty(), Queue.empty(), (complete, updateThread) ->
-            task.run(complete::with)
+                task.run(complete::with)
         );
     }
 
@@ -376,7 +378,10 @@ final class FutureImpl<T> implements Future<T> {
             if (waiters != null) {
                 waiters.forEach(this::unlock);
             }
-            if (actions != null && !isCancelled()) {
+            if (isCancelled()) {
+                return true;
+            }
+            if (actions != null) {
                 actions.forEach(this::perform);
                 return true;
             } else {
